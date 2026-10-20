@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Семейный бюджет</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f6fb;
+      color: #222;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: #1f6feb;
+      color: white;
+      padding: 28px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: 30px;
+      margin-bottom: 6px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+    }
+
+    .card h3 {
+      font-size: 14px;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    .income p { color: #188038; }
+    .expense p { color: #d93025; }
+    .balance p { color: #1f6feb; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+    }
+
+    .panel h2 {
+      margin-bottom: 16px;
+      font-size: 20px;
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      background: #1f6feb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1858c4;
+    }
+
+    .delete-btn {
+      width: auto;
+      margin: 0;
+      padding: 6px 10px;
+      background: #d93025;
+      font-size: 13px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #555;
+    }
+
+    .plus { color: #188038; font-weight: bold; }
+    .minus { color: #d93025; font-weight: bold; }
+
+    .empty {
+      color: #777;
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    @media (max-width: 760px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Семейный бюджет</h1>
+      <p>Учитывайте доходы и расходы семьи, чтобы видеть свободные деньги и планировать накопления.</p>
+    </header>
+
+    <section class="cards">
+      <div class="card income">
+        <h3>Доходы</h3>
+        <p id="totalIncome">0 ₽</p>
+      </div>
+      <div class="card expense">
+        <h3>Расходы</h3>
+        <p id="totalExpense">0 ₽</p>
+      </div>
+      <div class="card balance">
+        <h3>Остаток</h3>
+        <p id="balance">0 ₽</p>
+      </div>
+    </section>
+
+    <main class="grid">
+      <section class="panel">
+        <h2>Добавить операцию</h2>
+
+        <label for="type">Тип</label>
+        <select id="type">
+          <option value="income">Доход</option>
+          <option value="expense">Расход</option>
+        </select>
+
+        <label for="category">Категория</label>
+        <input id="category" type="text" placeholder="Например: Зарплата, Продукты">
+
+        <label for="amount">Сумма, ₽</label>
+        <input id="amount" type="number" min="1" placeholder="1000">
+
+        <button id="addBtn">Добавить</button>
+        <button id="clearBtn" style="background:#5f6368;">Очистить всё</button>
+      </section>
+
+      <section class="panel">
+        <h2>История операций</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Тип</th>
+              <th>Категория</th>
+              <th>Сумма</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="operations"></tbody>
+        </table>
+        <p id="emptyMessage" class="empty">Пока нет операций</p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const typeInput = document.getElementById('type');
+    const categoryInput = document.getElementById('category');
+    const amountInput = document.getElementById('amount');
+    const addBtn = document.getElementById('addBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const operationsBody = document.getElementById('operations');
+    const emptyMessage = document.getElementById('emptyMessage');
+
+    const totalIncomeEl = document.getElementById('totalIncome');
+    const totalExpenseEl = document.getElementById('totalExpense');
+    const balanceEl = document.getElementById('balance');
+
+    let operations = JSON.parse(localStorage.getItem('familyBudget') || '[]');
+
+    function formatMoney(value) {
+      return new Intl.NumberFormat('ru-RU').format(value) + ' ₽';
+    }
+
+    function save() {
+      localStorage.setItem('familyBudget', JSON.stringify(operations));
+    }
+
+    function render() {
+      operationsBody.innerHTML = '';
+
+      let income = 0;
+      let expense = 0;
+
+      operations.forEach((item, index) => {
+        if (item.type === 'income') {
+          income += item.amount;
+        } else {
+          expense += item.amount;
+        }
+
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+          <td class="${item.type === 'income' ? 'plus' : 'minus'}">
+            ${item.type === 'income' ? 'Доход' : 'Расход'}
+          </td>
+          <td>${item.category}</td>
+          <td class="${item.type === 'income' ? 'plus' : 'minus'}">
+            ${item.type === 'income' ? '+' : '-'}${formatMoney(item.amount)}
+          </td>
+          <td><button class="delete-btn" data-index="${index}">Удалить</button></td>
+        `;
+
+        operationsBody.appendChild(row);
+      });
+
+      totalIncomeEl.textContent = formatMoney(income);
+      totalExpenseEl.textContent = formatMoney(expense);
+      balanceEl.textContent = formatMoney(income - expense);
+
+      emptyMessage.style.display = operations.length ? 'none' : 'block';
+      save();
+    }
+
+    addBtn.addEventListener('click', () => {
+      const category = categoryInput.value.trim();
+      const amount = Number(amountInput.value);
+
+      if (!category || !amount || amount <= 0) {
+        alert('Введите категорию и положительную сумму.');
+        return;
+      }
+
+      operations.push({
+        type: typeInput.value,
+        category,
+        amount
+      });
+
+      categoryInput.value = '';
+      amountInput.value = '';
+      render();
+    });
+
+    operationsBody.addEventListener('click', (event) => {
+      if (event.target.classList.contains('delete-btn')) {
+        const index = Number(event.target.dataset.index);
+        operations.splice(index, 1);
+        render();
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (confirm('Удалить все операции?')) {
+        operations = [];
+        render();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
